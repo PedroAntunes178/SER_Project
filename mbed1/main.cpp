@@ -1,39 +1,17 @@
-#include "main.h"
+#include "mbed.h"
 
-int main(){
-    // reset the xbees (at least 200ns)
-    rst1 = 0;
-    ThisThread::sleep_for(1); 
-    rst1 = 1;
-    ThisThread::sleep_for(1); 
-    printf("main()\n");
-    can_thread.start(can_receive);
-    ticker.attach(&can_send, 1);
-    
-    char a = 0;
-    char prev = 0;
-    
-    while (true) {
-        if(xbee1.readable()){
-            prev = a;
-            a = xbee1.getc(); //XBee read
-            
-            if (a != prev){
-                if (a < 10){
-                    pc.putc(a);
-                }
-                if (a == 254 || a == 253){
-                    pc.putc(0);
-                }
-            }
-        }
-        ThisThread::sleep_for(500);
-    }
-}
+Ticker ticker;
+DigitalOut led1(LED1);
+DigitalOut led2(LED2);
+CAN can1(p9, p10);
+CAN can2(p30, p29);
+char counter = 0;
 
-void can_send(){
+Serial pc(USBTX, USBRX);//Opens up serial communication through the USB port via the computer
+
+void send() {
     printf("send()\n");
-    if (can1.write(CANMessage(1337, &counter, 1))) {
+    if(can1.write(CANMessage(1337, &counter, 1))) {
         printf("wloop()\n");
         counter++;
         printf("Message sent: %d\n", counter);
@@ -41,18 +19,15 @@ void can_send(){
     led1 = !led1;
 }
 
-void can_receive(){
+int main() {
+    pc.printf("main()\n");
+    ticker.attach(&send, 1);
     CANMessage msg;
-    bool flag = false;
-    printf("loop()\n");
-    while (true) {
-        if (can2.read(msg)) {
+    while(1) {
+        if(can2.read(msg)) {
             pc.printf("Message received: %d\n", msg.data[0]);
             led2 = !led2;
         }
-        ThisThread::sleep_for(200);
+        wait(0.2);
     }
-}
-
-void process_msg(char *data){
 }
