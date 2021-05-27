@@ -1,5 +1,6 @@
 #include "mbed.h"
 
+
 Ticker ticker;
 DigitalOut led1(LED1);
 DigitalOut led2(LED2);
@@ -11,10 +12,12 @@ Serial pc(USBTX, USBRX);//Opens up serial communication through the USB port via
 
 void send() {
     printf("send()\n");
-    if(can1.write(CANMessage(1337, &counter, 1))) {
         printf("wloop()\n");
+        stdio_mutex.unlock();
         counter++;
+        stdio_mutex.lock();
         printf("Message sent: %d\n", counter);
+        stdio_mutex.unlock();
     }
     led1 = !led1;
 }
@@ -23,10 +26,6 @@ int main() {
     pc.printf("main()\n");
     ticker.attach(&send, 1);
     CANMessage msg;
-    while(1) {
-        if(can2.read(msg)) {
-            pc.printf("Message received: %d\n", msg.data[0]);
-            led2 = !led2;
         }
         wait(0.2);
     }
